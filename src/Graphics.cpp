@@ -7,16 +7,9 @@ Graphics::Graphics(std::string title, int width, int height) {
     if(SDL_Init(SDL_INIT_VIDEO) < 0) {
         throw std::runtime_error(std::string("SDL failed to initialize. SDL error = ") + SDL_GetError());
     }
-    window = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, 0);
-    if(window == NULL) {
+    if(SDL_CreateWindowAndRenderer(width, height, 0, &window, &renderer) == -1) {
         SDL_Quit();
-        throw std::runtime_error(std::string("SDL failed to initialize. SDL error = ") + SDL_GetError());
-    }
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if(renderer == NULL) {
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        throw std::runtime_error(std::string("Renderer could not be created! SDL Error: %s\n") + SDL_GetError());
+        throw std::runtime_error(std::string("SDL Couldn't create window and renderer. SDL error = ") + SDL_GetError());
     }
     SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
     SDL_RenderClear(renderer);
@@ -34,6 +27,15 @@ void Graphics::rectangle(int x, int y, int width, int height, int r, int g, int 
     SDL_RenderFillRect(renderer, &dstRect);
 }
 
+void Graphics::clear(int r, int g, int b) {
+    SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
+    SDL_RenderClear(renderer);
+}
+
 void Graphics::flip() {
     SDL_RenderPresent(renderer);
+    SDL_SetRenderDrawColor(renderer, 0x00, 0xFF, 0xFF, 0xFF);
+    // for emscripten, don't call SDL_RenderClear here: WebGL ignores the
+    // SDL_RenderPresent and flips automatically after emscripten's main loop.
+    // Instead, call Graphics::clear at beginning of main loop.
 }
